@@ -31,6 +31,7 @@ cd jira-xray-dashboard
 2. **Install dependencies:**
 ```bash
 npm install
+npm install recharts lucide-react papaparse lodash tailwindcss postcss autoprefixer
 ```
 
 3. **Start the development server:**
