@@ -1,6 +1,6 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, TreemapChart, Treemap } from 'recharts';
-import { Upload, FileText, Activity, AlertCircle, CheckCircle, Clock, Target, Eye, Filter, Download } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { Upload, FileText, Activity, AlertCircle, CheckCircle, Target, Eye, Filter } from 'lucide-react';
 import Papa from 'papaparse';
 
 const Dashboard = () => {
@@ -9,18 +9,6 @@ const Dashboard = () => {
   const [activeView, setActiveView] = useState('overview');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [selectedParent, setSelectedParent] = useState('all');
-
-  // Color schemes for different statuses
-  const statusColors = {
-    'UNCOVERED': '#ef4444', // Red
-    'NOTRUN': '#f97316',    // Orange
-    'PASS': '#22c55e',      // Green
-    'FAIL': '#dc2626',      // Dark Red
-    'TODO': '#3b82f6',      // Blue
-    'TO DO': '#3b82f6',     // Blue (alias for TODO)
-    'BLOCKED': '#6b7280',   // Gray
-    'RUNNING': '#eab308'    // Yellow
-  };
 
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
@@ -33,10 +21,9 @@ const Dashboard = () => {
         header: true,
         dynamicTyping: true,
         skipEmptyLines: true,
-        delimiter: ';' // Ensure this matches your CSV delimiter
+        delimiter: ';'
       });
 
-      // Process data to ensure consistent keys and add derived properties
       const processedData = parsed.data.map((row, index) => ({
         id: index,
         parentKey: row['Parent Requirement Key'] || null,
@@ -48,46 +35,32 @@ const Dashboard = () => {
         testSummary: row['Test Summary'] || null,
         testStatus: row['Test Status'] || null,
         defectKeys: row['Defect Keys'] || null,
-        // Determine if it's a parent requirement (has a key but no parent key)
-        isParent: !!row['Requirement Key'] && !row['Parent Requirement Key'],
-        // Determine if it has test coverage
+        isParent: !row['Parent Requirement Key'] && row['Requirement Key'],
         hasCoverage: !!row['Test Key']
       }));
 
       setData(processedData);
-      setFilteredData(processedData); // Initialize filtered data with all data
+      setFilteredData(processedData);
     };
     reader.readAsText(file);
   };
 
-  // Analytics computations using useMemo for performance
   const analytics = useMemo(() => {
     if (!filteredData.length) return null;
 
-    // Count occurrences of each requirement status
     const statusCounts = filteredData.reduce((acc, item) => {
       acc[item.requirementStatus] = (acc[item.requirementStatus] || 0) + 1;
       return acc;
     }, {});
 
-    // Count occurrences of each test status (only for items with a test status)
-    const testStatusCounts = filteredData
-      .filter(item => item.testStatus)
-      .reduce((acc, item) => {
-        acc[item.testStatus] = (acc[item.testStatus] || 0) + 1;
-        return acc;
-      }, {});
-
-    // Calculate overall test coverage statistics
     const coverageStats = {
       covered: filteredData.filter(item => item.hasCoverage).length,
       uncovered: filteredData.filter(item => !item.hasCoverage).length,
       total: filteredData.length
     };
 
-    // Group requirements by their parent, creating a hierarchical view
     const parentGroups = filteredData.reduce((acc, item) => {
-      const key = item.parentKey || 'Root Requirements'; // Use 'Root Requirements' for top-level items
+      const key = item.parentKey || 'Root Requirements';
       if (!acc[key]) {
         acc[key] = {
           name: item.parentSummary || 'Root Requirements',
@@ -104,57 +77,54 @@ const Dashboard = () => {
 
     return {
       statusCounts,
-      testStatusCounts,
       coverageStats,
       parentGroups,
-      coveragePercentage: Math.round((coverageStats.covered / coverageStats.total) * 100) || 0
+      coveragePercentage: Math.round((coverageStats.covered / coverageStats.total) * 100)
     };
-  }, [filteredData]); // Recalculate only when filteredData changes
+  }, [filteredData]);
 
-  // Filter handlers
   const applyFilters = () => {
-    let filtered = [...data]; // Start with the original data
-
-    // Apply status filter
+    let filtered = [...data];
+    
     if (selectedStatus !== 'all') {
       filtered = filtered.filter(item => item.requirementStatus === selectedStatus);
     }
-
-    // Apply parent filter
+    
     if (selectedParent !== 'all') {
-      filtered = filtered.filter(item =>
+      filtered = filtered.filter(item => 
         item.parentKey === selectedParent || (!item.parentKey && selectedParent === 'root')
       );
     }
-
+    
     setFilteredData(filtered);
   };
 
-  // Apply filters whenever selectedStatus, selectedParent, or the raw data changes
-  useEffect(() => {
+  React.useEffect(() => {
     applyFilters();
-  }, [selectedStatus, selectedParent, data]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedStatus, selectedParent, data]);
 
-  // Helper function to render the Overview tab content
   const renderOverview = () => {
-    if (!analytics) return <div className="p-8 text-center text-gray-500">Upload a CSV file to get started</div>;
+    if (!analytics) return (
+      <div className="p-8 text-center text-gray-500">
+        <Upload className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+        <h3 className="text-xl font-medium mb-2">Upload a CSV file to get started</h3>
+        <p>Select your Jira/Xray traceability report to visualize requirements coverage</p>
+      </div>
+    );
 
-    // Prepare data for status distribution chart
     const statusChartData = Object.entries(analytics.statusCounts).map(([status, count]) => ({
       name: status,
       value: count,
       percentage: Math.round((count / filteredData.length) * 100)
     }));
 
-    // Prepare data for coverage pie chart
     const coverageData = [
-      { name: 'Covered', value: analytics.coverageStats.covered, color: '#22c55e' }, // Green
-      { name: 'Uncovered', value: analytics.coverageStats.uncovered, color: '#ef4444' } // Red
+      { name: 'Covered', value: analytics.coverageStats.covered, color: '#22c55e' },
+      { name: 'Uncovered', value: analytics.coverageStats.uncovered, color: '#ef4444' }
     ];
 
     return (
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        {/* Key Metrics Section */}
         <div className="xl:col-span-3 grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-white p-4 rounded-lg shadow border">
             <div className="flex items-center">
@@ -165,7 +135,7 @@ const Dashboard = () => {
               </div>
             </div>
           </div>
-
+          
           <div className="bg-white p-4 rounded-lg shadow border">
             <div className="flex items-center">
               <CheckCircle className="h-8 w-8 text-green-600 mr-3" />
@@ -175,7 +145,7 @@ const Dashboard = () => {
               </div>
             </div>
           </div>
-
+          
           <div className="bg-white p-4 rounded-lg shadow border">
             <div className="flex items-center">
               <AlertCircle className="h-8 w-8 text-orange-600 mr-3" />
@@ -185,7 +155,7 @@ const Dashboard = () => {
               </div>
             </div>
           </div>
-
+          
           <div className="bg-white p-4 rounded-lg shadow border">
             <div className="flex items-center">
               <Activity className="h-8 w-8 text-purple-600 mr-3" />
@@ -197,7 +167,6 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Status Distribution Chart */}
         <div className="bg-white p-6 rounded-lg shadow border">
           <h3 className="text-lg font-semibold mb-4">Requirement Status Distribution</h3>
           <ResponsiveContainer width="100%" height={300}>
@@ -211,7 +180,6 @@ const Dashboard = () => {
           </ResponsiveContainer>
         </div>
 
-        {/* Coverage Pie Chart */}
         <div className="bg-white p-6 rounded-lg shadow border">
           <h3 className="text-lg font-semibold mb-4">Test Coverage Overview</h3>
           <ResponsiveContainer width="100%" height={300}>
@@ -221,7 +189,7 @@ const Dashboard = () => {
                 cx="50%"
                 cy="50%"
                 labelLine={false}
-                label={({ name, percentage }) => `${name} ${percentage}%`}
+                label={({ name, value }) => `${name}: ${value}`}
                 outerRadius={80}
                 fill="#8884d8"
                 dataKey="value"
@@ -235,7 +203,6 @@ const Dashboard = () => {
           </ResponsiveContainer>
         </div>
 
-        {/* Parent Groups Coverage */}
         <div className="bg-white p-6 rounded-lg shadow border">
           <h3 className="text-lg font-semibold mb-4">Coverage by Parent Group</h3>
           <div className="space-y-3 max-h-80 overflow-y-auto">
@@ -265,131 +232,6 @@ const Dashboard = () => {
     );
   };
 
-  // Helper function to render the Hierarchy tab content
-  const renderHierarchy = () => {
-    if (!analytics) return <div className="p-8 text-center text-gray-500">No data available</div>;
-
-    return (
-      <div className="bg-white rounded-lg shadow border">
-        <div className="p-6 border-b">
-          <h3 className="text-lg font-semibold">Requirements Hierarchy</h3>
-        </div>
-        <div className="p-6">
-          {Object.entries(analytics.parentGroups).map(([key, group]) => (
-            <div key={key} className="mb-6">
-              <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg mb-3">
-                <div className="flex items-center">
-                  <FileText className="h-5 w-5 text-blue-600 mr-3" />
-                  <div>
-                    <h4 className="font-semibold text-blue-900">{group.name}</h4>
-                    <p className="text-sm text-blue-700">{group.total} requirements, {group.covered} covered</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                    {Math.round((group.covered / group.total) * 100)}% covered
-                  </span>
-                </div>
-              </div>
-              
-              <div className="ml-8 space-y-2">
-                {group.children.map((child) => (
-                  <div key={child.id} className="flex items-center justify-between p-3 border border-gray-200 rounded">
-                    <div className="flex items-center flex-1">
-                      <div className={`w-3 h-3 rounded-full mr-3 ${child.hasCoverage ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                      <div className="flex-1">
-                        <p className="font-medium text-sm">{child.requirementKey}</p>
-                        <p className="text-xs text-gray-600 truncate">{child.requirementSummary}</p>
-                      </div>
-                    </div>
-                    <div className="ml-4 flex items-center space-x-2">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        statusColors[child.requirementStatus] ? 
-                        `bg-${statusColors[child.requirementStatus].replace('#', '')}-100 text-${statusColors[child.requirementStatus].replace('#', '')}-800` : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {child.requirementStatus}
-                      </span>
-                      {child.testKey && (
-                        <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">
-                          {child.testKey}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  // Helper function to render the Details Table tab content
-  const renderDetailsTable = () => {
-    return (
-      <div className="bg-white rounded-lg shadow border">
-        <div className="p-6 border-b">
-          <h3 className="text-lg font-semibold">Detailed Requirements View</h3>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Requirement</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Summary</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Test</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Test Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Coverage</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredData.map((item) => (
-                <tr key={item.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {item.requirementKey}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">
-                    {item.requirementSummary}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      item.requirementStatus === 'UNCOVERED' ? 'bg-red-100 text-red-800' :
-                      item.requirementStatus === 'NOTRUN' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
-                      {item.requirementStatus}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {item.testKey || '-'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {item.testStatus ? (
-                      <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                        {item.testStatus}
-                      </span>
-                    ) : '-'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      {item.hasCoverage ? (
-                        <CheckCircle className="h-5 w-5 text-green-500" />
-                      ) : (
-                        <AlertCircle className="h-5 w-5 text-red-500" />
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div className="min-h-screen bg-gray-100">
       <div className="bg-white shadow">
@@ -402,75 +244,68 @@ const Dashboard = () => {
             
             <div className="flex items-center space-x-4">
               <label className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer">
-                {/* Hidden file input that triggers file selection */}
-                <input type="file" className="hidden" accept=".csv" onChange={handleFileUpload} />
                 <Upload className="h-5 w-5 mr-2" />
                 Upload CSV
+                <input
+                  type="file"
+                  accept=".csv"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
               </label>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
-        {/* Navigation Buttons */}
-        <div className="flex space-x-4 mb-6">
-          <button
-            onClick={() => setActiveView('overview')}
-            className={`px-4 py-2 rounded-md text-sm font-medium ${activeView === 'overview' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800'}`}
-          >
-            <Eye className="inline-block h-4 w-4 mr-2" /> Overview
-          </button>
-          <button
-            onClick={() => setActiveView('hierarchy')}
-            className={`px-4 py-2 rounded-md text-sm font-medium ${activeView === 'hierarchy' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800'}`}
-          >
-            <FileText className="inline-block h-4 w-4 mr-2" /> Hierarchy
-          </button>
-          <button
-            onClick={() => setActiveView('details')}
-            className={`px-4 py-2 rounded-md text-sm font-medium ${activeView === 'details' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800'}`}
-          >
-            <FileText className="inline-block h-4 w-4 mr-2" /> Details Table
-          </button>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex space-x-1 mb-6">
+          {[
+            { id: 'overview', label: 'Overview', icon: Activity }
+          ].map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              onClick={() => setActiveView(id)}
+              className={`flex items-center px-4 py-2 rounded-lg font-medium ${
+                activeView === id
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              <Icon className="h-5 w-5 mr-2" />
+              {label}
+            </button>
+          ))}
         </div>
 
-        {/* Filters */}
-        <div className="bg-white p-6 rounded-lg shadow border mb-6 flex items-center space-x-4">
-          <Filter className="h-5 w-5 text-gray-400" />
-          <label htmlFor="status-filter" className="sr-only">Filter by Status</label>
-          <select
-            id="status-filter"
-            className="form-select block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
-            value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value)}
-          >
-            <option value="all">All Statuses</option>
-            {Object.keys(statusColors).map(status => (
-              <option key={status} value={status}>{status}</option>
-            ))}
-          </select>
+        {data.length > 0 && (
+          <div className="bg-white p-4 rounded-lg shadow border mb-6">
+            <div className="flex items-center space-x-4">
+              <Filter className="h-5 w-5 text-gray-600" />
+              
+              <select
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="all">All Status</option>
+                {Object.keys(analytics?.statusCounts || {}).map(status => (
+                  <option key={status} value={status}>{status}</option>
+                ))}
+              </select>
 
-          <label htmlFor="parent-filter" className="sr-only">Filter by Parent</label>
-          <select
-            id="parent-filter"
-            className="form-select block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
-            value={selectedParent}
-            onChange={(e) => setSelectedParent(e.target.value)}
-          >
-            <option value="all">All Parents</option>
-            <option value="root">Root Requirements</option>
-            {Object.keys(analytics?.parentGroups || {}).map(key => (
-              key !== 'Root Requirements' && <option key={key} value={key}>{analytics.parentGroups[key].name}</option>
-            ))}
-          </select>
+              <div className="flex-1"></div>
+              
+              <div className="text-sm text-gray-600">
+                Showing {filteredData.length} of {data.length} requirements
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div>
+          {renderOverview()}
         </div>
-
-        {/* Render active view based on state */}
-        {activeView === 'overview' && renderOverview()}
-        {activeView === 'hierarchy' && renderHierarchy()}
-        {activeView === 'details' && renderDetailsTable()}
-
       </div>
     </div>
   );
