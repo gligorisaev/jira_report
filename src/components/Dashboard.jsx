@@ -167,65 +167,74 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow border">
-          <h3 className="text-lg font-semibold mb-4">Requirement Status Distribution</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={statusChartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip formatter={(value, name) => [`${value} (${statusChartData.find(d => d.name === name)?.percentage}%)`, 'Count']} />
-              <Bar dataKey="value" fill="#3b82f6" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow border">
-          <h3 className="text-lg font-semibold mb-4">Test Coverage Overview</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={coverageData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({ name, value }) => `${name}: ${value}`}
-                outerRadius={80}
-                fill="#8884d8"
-                dataKey="value"
-              >
-                {coverageData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow border">
-          <h3 className="text-lg font-semibold mb-4">Coverage by Parent Group</h3>
-          <div className="space-y-3 max-h-80 overflow-y-auto">
-            {Object.entries(analytics.parentGroups).map(([key, group]) => {
-              const coverage = Math.round((group.covered / group.total) * 100);
-              return (
-                <div key={key} className="flex items-center justify-between p-3 bg-gray-50 rounded">
-                  <div className="flex-1">
-                    <p className="font-medium text-sm truncate">{group.name}</p>
-                    <p className="text-xs text-gray-600">{group.covered}/{group.total} covered</p>
-                  </div>
-                  <div className="ml-4">
-                    <div className="w-16 bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-green-600 h-2 rounded-full" 
-                        style={{ width: `${coverage}%` }}
-                      ></div>
+        {/* Charts Section - Left: Parent Groups (2/3), Right: Status & Coverage (1/3) */}
+        <div className="xl:col-span-3 grid grid-cols-1 xl:grid-cols-3 gap-6">
+          {/* Coverage by Parent Group - Left side (2/3 width) */}
+          <div className="xl:col-span-2 bg-white p-6 rounded-lg shadow border flex flex-col">
+            <h3 className="text-lg font-semibold mb-4">Coverage by Parent Group</h3>
+            <div className="flex-1 space-y-3 overflow-y-auto">
+              {Object.entries(analytics.parentGroups).map(([key, group]) => {
+                const coverage = Math.round((group.covered / group.total) * 100);
+                return (
+                  <div key={key} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div className="flex-1 min-w-0 mr-4">
+                      <p className="font-medium text-base text-gray-900 break-words leading-relaxed">{group.name}</p>
+                      <p className="text-sm text-gray-600 mt-1">{group.covered}/{group.total} covered</p>
                     </div>
-                    <p className="text-xs text-center mt-1">{coverage}%</p>
+                    <div className="flex-shrink-0 ml-4">
+                      <div className="w-24 bg-gray-200 rounded-full h-3">
+                        <div 
+                          className="bg-green-600 h-3 rounded-full transition-all duration-300" 
+                          style={{ width: `${coverage}%` }}
+                        ></div>
+                      </div>
+                      <p className="text-sm text-center mt-2 font-medium">{coverage}%</p>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Right side - Status Distribution and Coverage Charts (1/3 width) */}
+          <div className="xl:col-span-1 space-y-6">
+            {/* Status Distribution Chart */}
+            <div className="bg-white p-6 rounded-lg shadow border">
+              <h3 className="text-lg font-semibold mb-4">Requirement Status Distribution</h3>
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={statusChartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip formatter={(value, name) => [`${value} (${statusChartData.find(d => d.name === name)?.percentage}%)`, 'Count']} />
+                  <Bar dataKey="value" fill="#3b82f6" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Test Coverage Pie Chart */}
+            <div className="bg-white p-6 rounded-lg shadow border">
+              <h3 className="text-lg font-semibold mb-4">Test Coverage Overview</h3>
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie
+                    data={coverageData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, value }) => `${name}: ${value}`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {coverageData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
       </div>
