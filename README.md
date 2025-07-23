@@ -2,7 +2,6 @@
 
 A powerful, interactive dashboard for visualizing Jira/Xray traceability reports and requirements coverage analysis. Transform your CSV exports into actionable insights with beautiful charts, hierarchical views, and comprehensive analytics.
 
-![Dashboard Preview](https://via.placeholder.com/800x400/3b82f6/ffffff?text=Dashboard+Preview)
 
 ## ✨ Features
 
