@@ -2,6 +2,12 @@
 
 Generate an interactive HTML dashboard from Jira Xray Requirements Traceability Reports.
 
+## 🌐 Live Demo
+
+**Access the dashboard online:** [https://gligorisaev.github.io/jira_report/](https://gligorisaev.github.io/jira_report/)
+
+No installation needed - just visit the URL and upload your CSV!
+
 ## Quick Start
 
 ### Option 1: In-Browser Upload (No Python Required)
