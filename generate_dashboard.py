@@ -26,6 +26,7 @@ def parse_traceability_report(csv_file):
     epics = {}
     stories = {}
     tests = {}
+    project_name = None
     
     with open(csv_file, 'r', encoding='utf-8-sig') as f:
         reader = csv.DictReader(f, delimiter=';')
@@ -39,6 +40,15 @@ def parse_traceability_report(csv_file):
             test_key = (row.get('Test Key') or '').strip()
             test_summary = (row.get('Test Summary') or '').strip()
             test_status = (row.get('Test Status') or '').strip()
+            
+            # Extract project name from first row with data
+            if project_name is None:
+                project_name = (row.get('Project name') or row.get('Project key') or '').strip()
+                # If no project field, extract from issue key (e.g., TML40 from TML40-531)
+                if not project_name and req_key:
+                    parts = req_key.split('-')
+                    if len(parts) >= 2:
+                        project_name = parts[0]
             
             # Handle epics (parent requirements without parents)
             if parent_key and parent_key not in epics:
@@ -120,7 +130,7 @@ def parse_traceability_report(csv_file):
                         'status': normalized_status
                     }
     
-    return epics, stories, tests
+    return epics, stories, tests, project_name or 'Project'
 
 
 def calculate_metrics(epics):
@@ -167,8 +177,11 @@ def calculate_metrics(epics):
     return metrics
 
 
-def generate_html_dashboard(epics, metrics, output_file):
+def generate_html_dashboard(epics, metrics, output_file, project_name='Project', csv_filename='traceability_report.csv'):
     """Generate an interactive HTML dashboard."""
+    
+    from datetime import datetime
+    generation_time = datetime.now().strftime('%b %d, %Y, %I:%M:%S %p')
     
     # Sort epics by summary using natural sort
     sorted_epics = sorted(epics.items(), key=lambda x: natural_sort_key(x[1]['summary']))
@@ -224,9 +237,17 @@ def generate_html_dashboard(epics, metrics, output_file):
             margin-bottom: 10px;
         }}
         
-        .header p {{
+        .header .subtitle {{
             color: #718096;
             font-size: 16px;
+            margin-top: 5px;
+        }}
+        
+        .header .timestamp {{
+            color: #a0aec0;
+            font-size: 14px;
+            margin-top: 5px;
+            font-style: italic;
         }}
         
         .stats-grid {{
@@ -531,8 +552,9 @@ def generate_html_dashboard(epics, metrics, output_file):
 <body>
     <div class="container">
         <div class="header">
-            <h1>📊 Requirements Traceability Dashboard</h1>
-            <p>Epic, Story, and Test Coverage Overview</p>
+            <h1>📊 {project_name} - Requirements Traceability</h1>
+            <p class="subtitle">Source: {csv_filename}</p>
+            <p class="timestamp">Generated: {generation_time}</p>
         </div>
         
         <div class="stats-grid">
@@ -787,7 +809,7 @@ def main():
     print(f"Reading: {csv_file}")
     
     # Parse the CSV
-    epics, stories, tests = parse_traceability_report(csv_file)
+    epics, stories, tests, project_name = parse_traceability_report(csv_file)
     
     print(f"\nParsed:")
     print(f"   - {len(epics)} Epics")
@@ -798,7 +820,7 @@ def main():
     metrics = calculate_metrics(epics)
     
     # Generate HTML dashboard
-    generate_html_dashboard(epics, metrics, output_file)
+    generate_html_dashboard(epics, metrics, output_file, project_name, csv_file.name)
     
     print(f"\nDashboard generated: {output_file}")
     print(f"\nOpen {output_file} in your browser to view the dashboard.")

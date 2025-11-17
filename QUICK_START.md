@@ -2,36 +2,61 @@
 
 ## 📋 What You Need
 
-- Python 3.7 or higher
 - A Requirements Traceability Report from Jira/Xray (CSV format)
+- **Option A**: A web browser (Chrome, Firefox, Edge, Safari)
+- **Option B**: Python 3.7+ (if using the Python generator)
 
-## 🚀 Steps to Generate Your Dashboard
+## 🚀 Two Ways to Generate Your Dashboard
 
-### 1. Export the Report from Jira
+### ⚡ Option A: In-Browser Upload (Easiest - No Installation!)
 
-1. Go to Jira/Xray
-2. Navigate to **Reports** → **Requirement Traceability Report**
-3. Configure your filters (project, version, etc.)
-4. Click **Export** and save as CSV
-5. Name the file: `traceability_report.csv`
-6. Place it in this directory
+1. **Export the Report from Jira**
+   - Go to Jira/Xray
+   - Navigate to **Reports** → **Requirement Traceability Report**
+   - Configure your filters (project, version, etc.)
+   - Click **Export** and save as CSV
 
-### 2. Run the Generator
+2. **Open the Dashboard**
+   - Open `index.html` in any web browser
 
-**Option A: Double-click the batch file**
-```
-generate.bat
-```
-This will automatically generate and open the dashboard.
+3. **Upload Your File**
+   - Drag and drop your CSV file onto the upload zone
+   - OR click "Choose File" to browse for it
+   - Dashboard generates instantly!
 
-**Option B: Run from PowerShell/Command Prompt**
-```powershell
-python generate_dashboard.py
-```
+**Advantages:**
+- ✅ No Python installation required
+- ✅ Works on any device with a browser
+- ✅ Instant generation
+- ✅ Privacy - your data never leaves your computer
 
-### 3. View Your Dashboard
+### 🐍 Option B: Python Generator (For Automation)
 
-The script creates `dashboard.html` - open it in any modern browser.
+1. **Export the Report from Jira** (same as above)
+
+2. **Save the File**
+   - Name it `traceability_report.csv`
+   - Place it in this directory
+
+3. **Run the Generator**
+   
+   **Easy way - Double-click:**
+   ```
+   generate.bat
+   ```
+   
+   **Or from PowerShell/Command Prompt:**
+   ```powershell
+   python generate_dashboard.py
+   ```
+
+4. **View Your Dashboard**
+   - Opens `dashboard.html` automatically
+
+**Advantages:**
+- ✅ Can be automated/scripted
+- ✅ Batch processing multiple files
+- ✅ Integration with CI/CD pipelines
 
 ## 📊 What the Dashboard Shows
 

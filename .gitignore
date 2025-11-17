@@ -14,6 +14,9 @@ dist/
 # Generated files
 dashboard.html
 
+# Keep index.html (it's the main app)
+!index.html
+
 # Data files (optional - uncomment to ignore CSV files)
 # *.csv
 # traceability_report.csv

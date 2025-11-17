@@ -4,12 +4,21 @@ Generate an interactive HTML dashboard from Jira Xray Requirements Traceability 
 
 ## Quick Start
 
+### Option 1: In-Browser Upload (No Python Required)
+
+1. Open `index.html` in your browser
+2. Drag and drop your Requirements Traceability Report CSV file
+3. Dashboard generates instantly!
+
+### Option 2: Python Generator
+
 1. Export the **Requirement Traceability Report** from Jira/Xray
 2. Save it as `traceability_report.csv` in this directory
 3. Run the generator:
    ```powershell
    python generate_dashboard.py
    ```
+   or double-click `generate.bat`
 4. Open `dashboard.html` in your browser
 
 ## Features
