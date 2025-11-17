@@ -8,6 +8,15 @@ env/
 venv/
 ENV/
 build/
+dist/
+*.egg-info/
+
+# Generated files
+dashboard.html
+
+# Data files (optional - uncomment to ignore CSV files)
+# *.csv
+# traceability_report.csv
 develop-eggs/
 dist/
 downloads/
