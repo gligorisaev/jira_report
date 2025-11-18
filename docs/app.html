@@ -445,6 +445,122 @@
             outline: none;
             border-color: #667eea;
         }
+        
+        .view-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .view-tab {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            background: #f7fafc;
+            color: #4a5568;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .view-tab:hover {
+            background: #edf2f7;
+        }
+        
+        .view-tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .view-content {
+            display: none;
+        }
+        
+        .view-content.active {
+            display: block;
+        }
+        
+        .tests-view {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .test-group {
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .test-group:last-child {
+            border-bottom: none;
+        }
+        
+        .test-group-header {
+            padding: 20px 25px;
+            background: #f7fafc;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .test-group-header:hover {
+            background: #edf2f7;
+        }
+        
+        .test-group-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .test-parent-info {
+            flex: 1;
+        }
+        
+        .test-epic {
+            font-size: 12px;
+            color: #667eea;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .test-story {
+            font-size: 14px;
+            color: #2d3748;
+            font-weight: 600;
+        }
+        
+        .test-count-badge {
+            background: #faf5ff;
+            color: #553c9a;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .test-group-tests {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        
+        .test-group.expanded .test-group-tests {
+            max-height: 3000px;
+        }
+        
+        .test-group-tests-inner {
+            padding: 0 25px 25px 25px;
+        }
+        
+        .orphan-tests {
+            background: #fef5e7;
+            border-left: 4px solid #f39c12;
+        }
 
         .loading {
             text-align: center;
@@ -490,11 +606,22 @@
                 </div>
             </div>
             
+            <div class="view-tabs">
+                <button class="view-tab active" onclick="switchView('epics')">📊 Epics View</button>
+                <button class="view-tab" onclick="switchView('tests')">🧪 Tests View</button>
+            </div>
+            
             <div class="search-box">
                 <input type="text" id="searchInput" placeholder="🔍 Search epics, stories, or tests...">
             </div>
             
-            <div class="epics-container" id="epicsContainer"></div>
+            <div class="view-content active" id="epicsView">
+                <div class="epics-container" id="epicsContainer"></div>
+            </div>
+            
+            <div class="view-content" id="testsView">
+                <div class="tests-view" id="testsContainer"></div>
+            </div>
         </div>
     </div>
     
@@ -889,11 +1016,33 @@
             // Render epics
             renderEpics(epics, metrics);
             
+            // Render tests view
+            renderTestsView(epics, stories, tests);
+            
             // Show dashboard
             document.getElementById('dashboardContent').classList.add('show');
             
             // Setup search
             setupSearch();
+        }
+        
+        function switchView(viewName) {
+            // Update tabs
+            document.querySelectorAll('.view-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Update views
+            document.querySelectorAll('.view-content').forEach(view => {
+                view.classList.remove('active');
+            });
+            
+            if (viewName === 'epics') {
+                document.getElementById('epicsView').classList.add('active');
+            } else if (viewName === 'tests') {
+                document.getElementById('testsView').classList.add('active');
+            }
         }
         
         function renderCharts(covered, uncovered, passed, failed, notrun, todo) {
@@ -1094,15 +1243,159 @@
             epicCard.classList.toggle('expanded');
         }
         
+        function renderTestsView(epics, stories, tests) {
+            const testsContainer = document.getElementById('testsContainer');
+            
+            // Group tests by story
+            const testsByStory = {};
+            const orphanTests = [];
+            
+            Object.entries(tests).forEach(([testKey, test]) => {
+                if (test.stories.size === 0) {
+                    orphanTests.push({ key: testKey, ...test });
+                } else {
+                    test.stories.forEach(storyKey => {
+                        if (!testsByStory[storyKey]) {
+                            testsByStory[storyKey] = [];
+                        }
+                        testsByStory[storyKey].push({ key: testKey, ...test });
+                    });
+                }
+            });
+            
+            // Sort stories by epic and story name
+            const sortedStories = Object.entries(testsByStory).sort((a, b) => {
+                const storyA = stories[a[0]];
+                const storyB = stories[b[0]];
+                
+                if (!storyA || !storyB) return 0;
+                
+                // First sort by epic
+                const epicCompare = (storyA.epicKey || '').localeCompare(storyB.epicKey || '');
+                if (epicCompare !== 0) return epicCompare;
+                
+                // Then by story summary
+                const summaryA = naturalSortKey(storyA.summary);
+                const summaryB = naturalSortKey(storyB.summary);
+                
+                for (let i = 0; i < Math.min(summaryA.length, summaryB.length); i++) {
+                    if (summaryA[i] !== summaryB[i]) {
+                        if (typeof summaryA[i] === 'number' && typeof summaryB[i] === 'number') {
+                            return summaryA[i] - summaryB[i];
+                        }
+                        return summaryA[i] < summaryB[i] ? -1 : 1;
+                    }
+                }
+                return summaryA.length - summaryB.length;
+            });
+            
+            let html = '';
+            
+            // Render stories with tests
+            sortedStories.forEach(([storyKey, storyTests]) => {
+                const story = stories[storyKey];
+                if (!story) return;
+                
+                const epic = epics[story.epicKey];
+                const epicSummary = epic ? epic.summary : 'Unknown Epic';
+                
+                html += `
+                    <div class="test-group">
+                        <div class="test-group-header" onclick="toggleTestGroup(this)">
+                            <div class="test-group-info">
+                                <div class="test-parent-info">
+                                    <div class="test-epic">${story.epicKey} - ${epicSummary}</div>
+                                    <div class="test-story">${storyKey}: ${story.summary}</div>
+                                </div>
+                                <div>
+                                    <span class="test-count-badge">${storyTests.length} Tests</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="test-group-tests">
+                            <div class="test-group-tests-inner">
+                `;
+                
+                storyTests.forEach(test => {
+                    const statusLower = test.status.toLowerCase().replace(' ', '');
+                    html += `
+                        <div class="test-item">
+                            <span class="test-key">${test.key}</span>
+                            <span class="test-summary">${test.summary}</span>
+                            <span class="status-badge ${statusLower}">${test.status}</span>
+                        </div>
+                    `;
+                });
+                
+                html += `
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            // Render orphan tests (tests without stories)
+            if (orphanTests.length > 0) {
+                html += `
+                    <div class="test-group orphan-tests">
+                        <div class="test-group-header" onclick="toggleTestGroup(this)">
+                            <div class="test-group-info">
+                                <div class="test-parent-info">
+                                    <div class="test-epic">⚠️ Orphan Tests</div>
+                                    <div class="test-story">Tests without parent stories</div>
+                                </div>
+                                <div>
+                                    <span class="test-count-badge">${orphanTests.length} Tests</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="test-group-tests">
+                            <div class="test-group-tests-inner">
+                `;
+                
+                orphanTests.forEach(test => {
+                    const statusLower = test.status.toLowerCase().replace(' ', '');
+                    html += `
+                        <div class="test-item">
+                            <span class="test-key">${test.key}</span>
+                            <span class="test-summary">${test.summary}</span>
+                            <span class="status-badge ${statusLower}">${test.status}</span>
+                        </div>
+                    `;
+                });
+                
+                html += `
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            testsContainer.innerHTML = html;
+        }
+        
+        function toggleTestGroup(header) {
+            const group = header.closest('.test-group');
+            group.classList.toggle('expanded');
+        }
+        
         function setupSearch() {
             const searchInput = document.getElementById('searchInput');
             searchInput.addEventListener('input', function(e) {
                 const searchTerm = e.target.value.toLowerCase();
-                const epicCards = document.querySelectorAll('.epic-card');
                 
+                // Search in epics view
+                const epicCards = document.querySelectorAll('.epic-card');
                 epicCards.forEach(card => {
                     const text = card.textContent.toLowerCase();
                     card.style.display = text.includes(searchTerm) ? 'block' : 'none';
+                });
+                
+                // Search in tests view
+                const testGroups = document.querySelectorAll('.test-group');
+                testGroups.forEach(group => {
+                    const text = group.textContent.toLowerCase();
+                    group.style.display = text.includes(searchTerm) ? 'block' : 'none';
                 });
             });
         }
