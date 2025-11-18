@@ -890,7 +890,7 @@
             // Calculate metrics and render
             const metrics = calculateMetrics(epics);
             updateDashboardTitle(projectName, fileName, uploadTime);
-            renderDashboard(epics, metrics);
+            renderDashboard(epics, metrics, stories, tests);
         }
         
         function updateDashboardTitle(projectName, fileName, uploadTime) {
@@ -961,7 +961,7 @@
             return metrics;
         }
         
-        function renderDashboard(epics, metrics) {
+        function renderDashboard(epics, metrics, stories, tests) {
             // Calculate overall stats
             const totalEpics = Object.keys(epics).length;
             const totalStories = Object.values(metrics).reduce((sum, m) => sum + m.totalStories, 0);
