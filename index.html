@@ -608,6 +608,7 @@
             
             <div class="view-tabs">
                 <button class="view-tab active" onclick="switchView('epics')">📊 Epics View</button>
+                <button class="view-tab" onclick="switchView('stories')">📋 Stories View</button>
                 <button class="view-tab" onclick="switchView('tests')">🧪 Tests View</button>
             </div>
             
@@ -617,6 +618,10 @@
             
             <div class="view-content active" id="epicsView">
                 <div class="epics-container" id="epicsContainer"></div>
+            </div>
+            
+            <div class="view-content" id="storiesView">
+                <div class="stories-view" id="storiesContainer"></div>
             </div>
             
             <div class="view-content" id="testsView">
@@ -1018,6 +1023,9 @@
             // Render epics
             renderEpics(epics, metrics);
             
+            // Render stories view
+            renderStoriesView(epics, stories, tests);
+            
             // Render tests view
             renderTestsView(epics, stories, tests);
             
@@ -1042,6 +1050,8 @@
             
             if (viewName === 'epics') {
                 document.getElementById('epicsView').classList.add('active');
+            } else if (viewName === 'stories') {
+                document.getElementById('storiesView').classList.add('active');
             } else if (viewName === 'tests') {
                 document.getElementById('testsView').classList.add('active');
             }
@@ -1245,6 +1255,130 @@
             epicCard.classList.toggle('expanded');
         }
         
+        function renderStoriesView(epics, stories, tests) {
+            const storiesContainer = document.getElementById('storiesContainer');
+            
+            // Group stories by epic
+            const storiesByEpic = {};
+            
+            Object.entries(stories).forEach(([storyKey, story]) => {
+                const epicKey = story.epicKey;
+                if (!storiesByEpic[epicKey]) {
+                    storiesByEpic[epicKey] = {
+                        epicSummary: epics[epicKey] ? epics[epicKey].summary : 'Unknown Epic',
+                        stories: []
+                    };
+                }
+                
+                const testCount = Object.keys(story.tests).length;
+                const testsList = Object.entries(story.tests).map(([testKey, test]) => ({
+                    key: testKey,
+                    summary: test.summary,
+                    status: test.status
+                }));
+                
+                storiesByEpic[epicKey].stories.push({
+                    key: storyKey,
+                    summary: story.summary,
+                    status: story.status,
+                    testCount: testCount,
+                    tests: testsList,
+                    hasCoverage: testCount > 0
+                });
+            });
+            
+            // Sort epics
+            const sortedEpics = Object.entries(storiesByEpic).sort((a, b) => {
+                return a[0].localeCompare(b[0]);
+            });
+            
+            let html = '';
+            
+            if (sortedEpics.length === 0) {
+                html = '<div class="no-tests">No stories found</div>';
+            } else {
+                sortedEpics.forEach(([epicKey, epicData]) => {
+                    // Sort stories naturally
+                    const sortedStories = epicData.stories.sort((a, b) => {
+                        const keyA = naturalSortKey(a.summary);
+                        const keyB = naturalSortKey(b.summary);
+                        
+                        for (let i = 0; i < Math.min(keyA.length, keyB.length); i++) {
+                            if (keyA[i] !== keyB[i]) {
+                                if (typeof keyA[i] === 'number' && typeof keyB[i] === 'number') {
+                                    return keyA[i] - keyB[i];
+                                }
+                                return keyA[i] < keyB[i] ? -1 : 1;
+                            }
+                        }
+                        return keyA.length - keyB.length;
+                    });
+                    
+                    html += `
+                        <div class="test-group expanded">
+                            <div class="test-group-header" onclick="toggleStoryGroup(this)">
+                                <div class="test-parent-info">
+                                    <div style="font-weight: 600; color: #2d3748;">
+                                        <span style="background: #e6fffa; padding: 2px 8px; border-radius: 4px; color: #234e52; font-size: 13px; margin-right: 8px;">${epicKey}</span>
+                                        ${epicData.epicSummary}
+                                    </div>
+                                    <div style="color: #718096; font-size: 14px; margin-top: 4px;">
+                                        ${sortedStories.length} stories
+                                    </div>
+                                </div>
+                                <span class="expand-icon" style="font-size: 20px; color: #4299e1;">▼</span>
+                            </div>
+                            <div class="test-group-tests">
+                    `;
+                    
+                    sortedStories.forEach(story => {
+                        const coverageClass = story.hasCoverage ? 'covered' : 'uncovered';
+                        const coverageBadge = story.hasCoverage 
+                            ? `<span class="badge tests">${story.testCount} Tests</span>`
+                            : '<span class="badge no-stories">No Tests</span>';
+                        
+                        html += `
+                            <div class="story-item ${coverageClass}" style="margin-bottom: 15px;">
+                                <div class="story-header">
+                                    <span class="story-key">${story.key}</span>
+                                    ${coverageBadge}
+                                </div>
+                                <div class="story-summary">${story.summary}</div>
+                        `;
+                        
+                        if (story.tests.length > 0) {
+                            html += '<div class="tests-list">';
+                            story.tests.forEach(test => {
+                                const statusLower = test.status.toLowerCase().replace(' ', '');
+                                html += `
+                                    <div class="test-item">
+                                        <span class="test-key">${test.key}</span>
+                                        <span class="test-summary">${test.summary}</span>
+                                        <span class="status-badge ${statusLower}">${test.status}</span>
+                                    </div>
+                                `;
+                            });
+                            html += '</div>';
+                        }
+                        
+                        html += '</div>';
+                    });
+                    
+                    html += `
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            
+            storiesContainer.innerHTML = html;
+        }
+        
+        function toggleStoryGroup(header) {
+            const group = header.closest('.test-group');
+            group.classList.toggle('expanded');
+        }
+        
         function renderTestsView(epics, stories, tests) {
             const testsContainer = document.getElementById('testsContainer');
             
@@ -1387,14 +1521,21 @@
                 const searchTerm = e.target.value.toLowerCase();
                 
                 // Search in epics view
-                const epicCards = document.querySelectorAll('.epic-card');
+                const epicCards = document.querySelectorAll('#epicsView .epic-card');
                 epicCards.forEach(card => {
                     const text = card.textContent.toLowerCase();
                     card.style.display = text.includes(searchTerm) ? 'block' : 'none';
                 });
                 
+                // Search in stories view
+                const storyGroups = document.querySelectorAll('#storiesView .test-group');
+                storyGroups.forEach(group => {
+                    const text = group.textContent.toLowerCase();
+                    group.style.display = text.includes(searchTerm) ? 'block' : 'none';
+                });
+                
                 // Search in tests view
-                const testGroups = document.querySelectorAll('.test-group');
+                const testGroups = document.querySelectorAll('#testsView .test-group');
                 testGroups.forEach(group => {
                     const text = group.textContent.toLowerCase();
                     group.style.display = text.includes(searchTerm) ? 'block' : 'none';
