@@ -966,11 +966,13 @@
             const totalEpics = Object.keys(epics).length;
             const totalStories = Object.values(metrics).reduce((sum, m) => sum + m.totalStories, 0);
             const coveredStories = Object.values(metrics).reduce((sum, m) => sum + m.coveredStories, 0);
-            const totalTests = Object.values(metrics).reduce((sum, m) => sum + m.totalTests, 0);
-            const passedTests = Object.values(metrics).reduce((sum, m) => sum + m.passedTests, 0);
-            const failedTests = Object.values(metrics).reduce((sum, m) => sum + m.failedTests, 0);
-            const notrunTests = Object.values(metrics).reduce((sum, m) => sum + m.notrunTests, 0);
-            const todoTests = Object.values(metrics).reduce((sum, m) => sum + m.todoTests, 0);
+            const totalTests = Object.keys(tests).length; // Count unique tests globally
+            
+            // Count test statuses from unique tests
+            const passedTests = Object.values(tests).filter(t => t.status === 'PASSED').length;
+            const failedTests = Object.values(tests).filter(t => t.status === 'FAILED').length;
+            const notrunTests = Object.values(tests).filter(t => t.status === 'NOTRUN').length;
+            const todoTests = Object.values(tests).filter(t => t.status === 'TO DO').length;
             const overallCoverage = totalStories > 0 ? (coveredStories / totalStories * 100) : 0;
             
             // Render stats
