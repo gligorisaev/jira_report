@@ -54,16 +54,16 @@
         /* Upload Zone */
         .upload-section {
             background: white;
-            padding: 40px;
+            padding: 20px;
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            margin-bottom: 30px;
+            margin-bottom: 20px;
         }
         
         .upload-zone {
-            border: 3px dashed #cbd5e0;
-            border-radius: 10px;
-            padding: 60px 40px;
+            border: 2px dashed #cbd5e0;
+            border-radius: 8px;
+            padding: 20px 30px;
             text-align: center;
             transition: all 0.3s;
             cursor: pointer;
@@ -76,30 +76,30 @@
         }
         
         .upload-icon {
-            font-size: 64px;
-            margin-bottom: 20px;
+            font-size: 32px;
+            margin-bottom: 10px;
             color: #667eea;
         }
         
         .upload-zone h2 {
             color: #2d3748;
-            font-size: 24px;
-            margin-bottom: 10px;
+            font-size: 16px;
+            margin-bottom: 5px;
         }
         
         .upload-zone p {
             color: #718096;
-            font-size: 16px;
-            margin-bottom: 20px;
+            font-size: 13px;
+            margin-bottom: 12px;
         }
         
         .upload-button {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            padding: 12px 30px;
-            border-radius: 8px;
-            font-size: 16px;
+            padding: 8px 20px;
+            border-radius: 6px;
+            font-size: 14px;
             font-weight: 600;
             cursor: pointer;
             transition: transform 0.2s;
@@ -572,12 +572,6 @@
 </head>
 <body>
     <div class="container">
-        <div class="header" id="mainHeader">
-            <h1 id="dashboardTitle">📊 Requirements Traceability Dashboard</h1>
-            <p class="subtitle" id="dashboardSubtitle">Upload your Jira Requirements Traceability Report to generate an interactive dashboard</p>
-            <p class="timestamp" id="dashboardTimestamp"></p>
-        </div>
-        
         <div class="upload-section">
             <div class="upload-zone" id="uploadZone">
                 <div class="upload-icon">📂</div>
@@ -590,6 +584,12 @@
             </div>
             <div class="file-info" id="fileInfo"></div>
             <div class="error-message" id="errorMessage"></div>
+        </div>
+        
+        <div class="header" id="mainHeader">
+            <h1 id="dashboardTitle">📊 Requirements Traceability Dashboard</h1>
+            <p class="subtitle" id="dashboardSubtitle">Upload your Jira Requirements Traceability Report to generate an interactive dashboard</p>
+            <p class="timestamp" id="dashboardTimestamp"></p>
         </div>
         
         <div class="dashboard-content" id="dashboardContent">
